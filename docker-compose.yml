@@ -1,0 +1,18 @@
+services:
+  mongodb:
+    image: mongo:6.0.13
+    container_name: mongodb
+  app:
+    build:
+      context: .
+      dockerfile: "Dockerfile"
+    volumes:
+      - ./:/app
+    depends_on:
+      - mongodb
+    restart: always
+    ports:
+      - 8080:8080
+    command: python app/main.py
+    stdin_open: true
+    tty: true
