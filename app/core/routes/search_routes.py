@@ -1,29 +1,24 @@
-from core.database import category_collection, parts_collection
-from core.models.category import CategoryCollection
-from core.models.part import PartsCollection
+from typing import List
+
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
+
+from ..models.category import Category
+from ..models.part import Part
 
 router = APIRouter()
 
 
-@router.get(
-    "/parts", response_description="List all parts", response_model_by_alias=False
-)
+@router.get("/parts", response_description="List all parts")
 async def list_parts():
-    parts: PartsCollection = PartsCollection(
-        parts=await parts_collection.find().to_list(None)
-    )
-    return JSONResponse({"data": parts.dict()})
+    parts: List[Part] = await Part.all().to_list()
+    return JSONResponse({"data": [part.model_dump() for part in parts]})
 
 
 @router.get(
-    "/category",
+    "/categories",
     response_description="List all categories",
-    response_model_by_alias=False,
 )
 async def list_categories():
-    categories: CategoryCollection = CategoryCollection(
-        categories=await category_collection.find().to_list(None)
-    )
-    return JSONResponse({"data": categories.dict()})
+    categories: List[Category] = await Category.all().to_list()
+    return JSONResponse({"data": [category.model_dump() for category in categories]})

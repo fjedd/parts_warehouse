@@ -1,18 +1,15 @@
-from typing import Annotated, List, Optional
+from typing import Annotated, Optional
 
-from pydantic import BaseModel, BeforeValidator, Field
+from beanie import Document, Indexed
+from pydantic import BaseModel, Field
 
-PyObjectId = Annotated[str, BeforeValidator(str)]
 
-
-class Category(BaseModel):
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    name: str = Field(...)
+class Category(Document):
+    name: Annotated[str, Indexed(unique=True)]
     parent_name: Optional[str] = Field(default=None)
 
-
-class CategoryCollection(BaseModel):
-    categories: List[Category]
+    class Settings:
+        name = "categories"
 
 
 class UpdateCategory(BaseModel):

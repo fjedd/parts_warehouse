@@ -1,47 +1,12 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
+# Local
+.pytest_cache/
+.mypy_cache/
+venv/
+.vscode/
+.env
+.idea
+__pycache__
+
+# Python #
 *.py[cod]
 *$py.class
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
-
-# IPython
-profile_default/
-ipython_config.py
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
-__pypackages__/
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Text Editor
-.vscode

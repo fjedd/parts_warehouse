@@ -1,34 +1,28 @@
 from typing import Any, Dict
 
-from bson.errors import InvalidId
-from bson.objectid import ObjectId
-from core.database import parts_collection
-from core.exceptions import PartNotFoundException
-from core.models.part import Location, Part, UpdatePart
+from beanie import PydanticObjectId
+from beanie.exceptions import RevisionIdWasChanged
+from beanie.operators import Set
 from fastapi import APIRouter, Body, HTTPException, status
 from fastapi.responses import JSONResponse
-from pymongo.collection import ReturnDocument
 from pymongo.errors import DuplicateKeyError
-from pymongo.results import DeleteResult, InsertOneResult
+
+from ..exceptions import PartNotFoundException
+from ..models.part import Part, UpdatePart
 
 router = APIRouter()
 
 
 @router.get(
-    "/{id}",
+    "/{part_id}",
     response_description="Get single part",
     response_model_by_alias=False,
 )
-async def get_part(part_id: str):
-    try:
-        part: Dict[str, Any] = await parts_collection.find_one(
-            {"_id": ObjectId(part_id)}
-        )
-    except InvalidId:
-        raise PartNotFoundException(part_id)
+async def get_part(part_id: PydanticObjectId):
+    part: Part = await Part.get(part_id)
     if part is not None:
         return JSONResponse(
-            {"message": f"Part {part_id} retrieved", "data": Part(**part).dict()}
+            {"message": f"Part {str(part_id)} retrieved", "data": part.model_dump()}
         )
     raise PartNotFoundException(part_id)
 
@@ -37,68 +31,58 @@ async def get_part(part_id: str):
     "/",
     response_description="Create part",
     status_code=status.HTTP_201_CREATED,
-    response_model_by_alias=False,
 )
 async def create_part(part: Part):
     try:
-        new_part: InsertOneResult = await parts_collection.insert_one(
-            part.model_dump(by_alias=True, exclude=["id"])
-        )
-    except DuplicateKeyError:
+        new_part: Part = await part.create()
+    except DuplicateKeyError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Part with this serial number already exists.",
+            detail=f'Part with {e.details.get("keyValue")} already exists',
         )
-    created_part: Dict[str, Any] = await parts_collection.find_one(
-        {"_id": new_part.inserted_id}
-    )
+    created_part: Part = await Part.get(new_part.id)
     return JSONResponse(
         {
-            "message": f"Part {new_part.inserted_id} created",
-            "data": Part(**created_part).dict(),
+            "message": f"Part {new_part.id} created",
+            "data": created_part.model_dump(),
         }
     )
 
 
-@router.put("/{id}", response_description="Update part")
-async def update_part(part_id: str, data: UpdatePart = Body(...)):
-    part = await parts_collection.find_one({"_id": ObjectId(part_id)})
-    data.location = Location(**part["location"]).copy(
-        update=data.location.dict(exclude_none=True)
-    )
-    update_data: Dict[str, Any] = data.dict(exclude_none=True)
-    if len(update_data) >= 1:
-        try:
-            updated_part: Dict[str, Any] = await parts_collection.find_one_and_update(
-                {"_id": ObjectId(part_id)},
-                {"$set": update_data},
-                return_document=ReturnDocument.AFTER,
-            )
-        except DuplicateKeyError:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Part with this serial number already exists",
-            )
-
-        if updated_part is not None:
-            return JSONResponse(
-                {
-                    "message": f"Part {part_id} updated",
-                    "data": Part(**updated_part).dict(),
-                }
-            )
-    raise PartNotFoundException(part_id)
-
-
-@router.delete("/{id}", response_description="Delete part")
-async def delete_part(part_id: str):
-    try:
-        deleted_part: DeleteResult = await parts_collection.delete_one(
-            {"_id": ObjectId(part_id)}
+@router.put("/{part_id}", response_description="Update part")
+async def update_part(part_id: PydanticObjectId, data: UpdatePart = Body(...)):
+    part: Part = await Part.find_one({"_id": part_id})
+    if not part:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if data.location:
+        data.location = part.location.model_copy(
+            update=data.location.model_dump(exclude_none=True)
         )
-    except InvalidId:
-        raise PartNotFoundException(part_id)
+    update_data: Dict[str, Any] = data.model_dump(exclude_none=True)
+    if not update_data:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+    try:
+        updated_part: Part = await part.update(Set(update_data))
+    except (DuplicateKeyError, RevisionIdWasChanged):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Part with this serial number already exists",
+        )
 
-    if deleted_part.deleted_count == 1:
-        return JSONResponse({"message": f"Part {part_id} deleted"})
+    if updated_part is not None:
+        return JSONResponse(
+            {
+                "message": f"Part {str(part_id)} updated",
+                "data": updated_part.model_dump(),
+            }
+        )
     raise PartNotFoundException(part_id)
+
+
+@router.delete("/{part_id}", response_description="Delete part")
+async def delete_part(part_id: PydanticObjectId):
+    part: Part = await Part.get(part_id)
+    if not part:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    await part.delete()
+    return JSONResponse({"message": f"Part {str(part_id)} deleted"})
