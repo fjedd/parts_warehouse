@@ -65,12 +65,125 @@ async def test_get_all_parts(client: AsyncClient, parts: InsertManyResult):
 
 
 @pytest.mark.parametrize(
+    "data",
+    [
+        {
+            "serial_number": "XYZ789",
+            "name": "Gadget",
+            "description": "Some description",
+            "category": "SubElectronics",
+            "quantity": 8,
+            "price": 19.99,
+            "location": {
+                "room": "D102",
+                "bookcase": "B3",
+                "shelf": "5",
+                "column": "G",
+                "row": 2,
+            },
+        },
+        {
+            "serial_number": "LMN456",
+            "name": "Toolbox",
+            "description": "Some description",
+            "category": "SubTools",
+            "quantity": 3,
+            "price": 29.99,
+            "location": {
+                "room": "C301",
+                "bookcase": "B2",
+                "shelf": "1",
+                "column": "H",
+                "row": 3,
+            },
+        },
+        {
+            "serial_number": "PQR123",
+            "name": "MiscItem",
+            "description": "Some description",
+            "category": "SubTools2",
+            "quantity": 6,
+            "price": 12.99,
+            "location": {},
+        },
+    ],
+)
+@pytest.mark.anyio
+async def test_create_part_correct_data(
+    client: AsyncClient,
+    parts: InsertManyResult,
+    categories: InsertManyResult,
+    data: Dict[str, Any],
+):
+    # Act
+    response: Response = await client.post("/parts", content=json.dumps(data))
+    # Assert
+    assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        {
+            "serial_number": "XYZ789",
+            "name": "Gadget",
+            "category": "Electronics",
+            "quantity": 8,
+            "price": 19.99,
+        },
+        {
+            "name": "Toolbox",
+            "category": "Tools",
+            "quantity": 3,
+            "price": 29.99,
+            "description": "Some description",
+        },
+        {
+            "serial_number": "PQR123",
+            "name": "MiscItem",
+            "category": "Miscellaneous",
+            "price": 12.99,
+            "location": {},
+        },
+        {
+            "serial_number": "STU456",
+            "name": "Machinator",
+            "quantity": 4,
+            "price": 149.99,
+            "location": {
+                "room": "B305",
+                "bookcase": "A1",
+                "shelf": "4",
+                "column": "K",
+                "row": 2,
+            },
+        },
+        {
+            "serial_number": "another_existing_serial",
+            "category": "Art",
+            "quantity": 1,
+            "price": 39.99,
+        },
+        {},
+    ],
+)
+@pytest.mark.anyio
+async def test_create_part_missing_data(
+    client: AsyncClient, parts: InsertManyResult, data: Dict[str, Any]
+):
+    # Act
+    response: Response = await client.post("/parts", content=json.dumps(data))
+    # Assert
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+@pytest.mark.parametrize(
     "update_data",
     [
         {
             "name": "test-update",
             "description": "test-update",
-            "category": "test-update",
+            "category": "SubTools2",
             "quantity": 15,
             "price": 30,
             "location": {"room": "test", "bookcase": 12, "column": "test"},
@@ -80,7 +193,7 @@ async def test_get_all_parts(client: AsyncClient, parts: InsertManyResult):
             "serial_number": "new_serial",
             "name": "new_name",
             "description": "test-object",
-            "category": "Tools",
+            "category": "SubTools",
             "quantity": 15,
             "price": 9.99,
             "location": {
@@ -93,7 +206,10 @@ async def test_get_all_parts(client: AsyncClient, parts: InsertManyResult):
 )
 @pytest.mark.anyio
 async def test_update_part_correct_data(
-    client: AsyncClient, parts: InsertManyResult, update_data: Dict[str, Any]
+    client: AsyncClient,
+    parts: InsertManyResult,
+    categories: InsertManyResult,
+    update_data: Dict[str, Any],
 ):
     # Arrange
     part_id: PydanticObjectId = parts.inserted_ids[0]
@@ -112,10 +228,12 @@ async def test_update_part_correct_data(
                             getattr(updated_part.location, location_key)
                             != location_value
                         ):
-                            raise AssertionError
+                            raise AssertionError(
+                                f"{getattr(updated_part.location, location_key)} != {location_value}"
+                            )
                 continue
             if getattr(updated_part, key) != value:
-                raise AssertionError
+                raise AssertionError(f"{getattr(updated_part, key)} != {value}")
 
     # Assert
     assert response.status_code == status.HTTP_200_OK

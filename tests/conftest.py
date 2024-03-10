@@ -38,13 +38,13 @@ def anyio_backend():
 
 
 @pytest.fixture
-async def parts():
+async def parts(categories):
     parts_data: List[Dict[str, Any]] = [
         {
             "serial_number": "ABC123",
             "name": "Widget",
             "description": "test-object",
-            "category": "Electronics",
+            "category": "SubTools",
             "quantity": 10,
             "price": 5.99,
             "location": {
@@ -60,7 +60,7 @@ async def parts():
             "serial_number": "DEF456",
             "name": "Gizmo",
             "description": "test-object",
-            "category": "Tools",
+            "category": "SubTools",
             "quantity": 5,
             "price": 9.99,
             "location": {
@@ -73,7 +73,7 @@ async def parts():
             "serial_number": "GHI789",
             "name": "Thingamajig",
             "description": "test-object",
-            "category": "Miscellaneous",
+            "category": "SubTools2",
             "quantity": 3,
             "price": 3.49,
             "location": {},
@@ -82,7 +82,7 @@ async def parts():
             "serial_number": "JKL012",
             "name": "Contraption",
             "description": "test-object",
-            "category": "Machinery",
+            "category": "SubElectronics",
             "quantity": 1,
             "price": 99.99,
             "location": {
@@ -95,7 +95,7 @@ async def parts():
             "serial_number": "existing_serial",
             "name": "Doodad",
             "description": "test-object",
-            "category": "Art",
+            "category": "SubMachinery",
             "quantity": 2,
             "price": 7.99,
             "location": {
@@ -114,12 +114,14 @@ async def parts():
 @pytest.fixture
 async def categories():
     category_data: List[Dict[str, Any]] = [
-        {"name": "Electronics"},
-        {"name": "Tools"},
         {"name": "Miscellaneous"},
+        {"name": "Electronics"},
         {"name": "Machinery"},
-        {"name": "Subcategory", "parent_name": "Electronics"},
-        {"name": "existing_category", "parent_name": "Tools"},
+        {"name": "Tools"},
+        {"name": "SubElectronics", "parent_name": "Electronics"},
+        {"name": "SubTools", "parent_name": "Tools"},
+        {"name": "SubTools2", "parent_name": "Tools"},
+        {"name": "SubMachinery", "parent_name": "Machinery"},
     ]
     categories: InsertManyResult = await Category.insert_many(
         [Category(**category) for category in category_data]
