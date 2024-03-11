@@ -1,16 +1,17 @@
 from typing import Annotated, Optional
 
-from beanie import Document, Indexed
-from pydantic import BaseModel, Field
+from beanie import Document, Indexed, Insert, Update, after_event, before_event
+from fastapi import HTTPException, status
+from pydantic import BaseModel
 
 
 class Location(BaseModel):
-    room: Optional[str | int] = Field(default=None)
-    bookcase: Optional[str | int] = Field(default=None)
-    shelf: Optional[str | int] = Field(default=None)
-    cubicle: Optional[str | int] = Field(default=None)
-    column: Optional[str | int] = Field(default=None)
-    row: Optional[str | int] = Field(default=None)
+    room: Optional[str | int] = None
+    bookcase: Optional[str | int] = None
+    shelf: Optional[str | int] = None
+    cubicle: Optional[str | int] = None
+    column: Optional[str | int] = None
+    row: Optional[str | int] = None
 
 
 class Part(Document):
@@ -22,23 +23,40 @@ class Part(Document):
     price: float
     location: Location
 
-    class Settings:
-        name = "parts"
+    @before_event(Insert)
+    async def validate_category_exists(self):
+        from .category import Category
 
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
-        json_schema_extra = {
-            "part": {
-                "serial_number": "04977fa636994a1eb8cfaada97532549",
-                "name": "Capacitor",
-                "description": "Lorem ipsum dolor sit amet",
-                "category": "electrical",
-                "quantity": 10,
-                "price": 5.99,
-                "location": {"shelf": 10, "room": "storage_2", "row": 12, "column": 6},
-            }
-        }
+        category: Category = await Category.find_one({"name": self.category})
+        if not category:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f'Could not assign part to category "{self.category}" do not exist',
+            )
+        if not category.parent_name:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f'Could not assign part to base category "{self.category}"',
+            )
+
+    @after_event(Update)
+    async def validate_category_is_not_base(self):
+        from .category import Category
+
+        category: Category = await Category.find_one({"name": self.category})
+        if not category:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f'Could not assign part to category "{self.category}" do not exist',
+            )
+        if not category.parent_name:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f'Could not assign part to base category "{self.category}"',
+            )
+
+    class Settings:
+        name: str = "parts"
 
 
 class UpdatePart(BaseModel):
@@ -49,6 +67,3 @@ class UpdatePart(BaseModel):
     quantity: Optional[int] = None
     price: Optional[float] = None
     location: Optional[Location] = None
-
-    class Config:
-        arbitrary_types_allowed = (True,)

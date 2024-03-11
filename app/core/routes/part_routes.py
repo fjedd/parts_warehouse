@@ -68,7 +68,6 @@ async def update_part(part_id: PydanticObjectId, data: UpdatePart = Body(...)):
             status_code=status.HTTP_409_CONFLICT,
             detail="Part with this serial number already exists",
         )
-
     if updated_part is not None:
         return JSONResponse(
             {

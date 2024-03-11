@@ -65,6 +65,47 @@ async def test_get_all_categories(client: AsyncClient, categories: InsertManyRes
 
 
 @pytest.mark.parametrize(
+    "data",
+    [{"name": "Category"}, {"name": "Category 1", "parent_name": "Tools"}],
+)
+@pytest.mark.anyio
+async def test_create_part_correct_data(
+    client: AsyncClient,
+    categories: InsertManyResult,
+    data: Dict[str, Any],
+):
+    # Act
+    response: Response = await client.post("/categories", content=json.dumps(data))
+    # Assert
+    assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.parametrize(
+    "data, expected_status_code",
+    [
+        ({"parent_name": "asdf"}, status.HTTP_422_UNPROCESSABLE_ENTITY),
+        ({"name": 123}, status.HTTP_422_UNPROCESSABLE_ENTITY),
+        (
+            {"name": "Category 1", "parent_name": "NonExisting"},
+            status.HTTP_409_CONFLICT,
+        ),
+        ({}, status.HTTP_422_UNPROCESSABLE_ENTITY),
+    ],
+)
+@pytest.mark.anyio
+async def test_create_category_missing_data(
+    client: AsyncClient,
+    categories: InsertManyResult,
+    data: Dict[str, Any],
+    expected_status_code: status,
+):
+    # Act
+    response: Response = await client.post("/categories", content=json.dumps(data))
+    # Assert
+    assert response.status_code == expected_status_code
+
+
+@pytest.mark.parametrize(
     "update_data",
     [
         {
@@ -102,7 +143,6 @@ async def test_update_category_correct_data(
     "update_data, expected_status_code",
     [
         ({}, status.HTTP_400_BAD_REQUEST),
-        ({"name": "existing_category"}, status.HTTP_409_CONFLICT),
         (None, status.HTTP_422_UNPROCESSABLE_ENTITY),
         ([], status.HTTP_422_UNPROCESSABLE_ENTITY),
         ("asdf", status.HTTP_422_UNPROCESSABLE_ENTITY),
@@ -140,8 +180,8 @@ async def test_delete_category(
     response: Response = await client.delete(f"/categories/{category_id}")
     total_categories_after: int = len(await Category.all().to_list())
     # Assert
-    assert total_categories_after == total_categories - 1
     assert response.status_code == status.HTTP_200_OK
+    assert total_categories_after == total_categories - 1
     assert response.json()["message"] == expected_message
 
 
