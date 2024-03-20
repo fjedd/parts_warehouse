@@ -7,16 +7,17 @@ from fastapi import APIRouter, Body, HTTPException, status
 from fastapi.responses import JSONResponse
 from pymongo.errors import DuplicateKeyError
 
+from ..auth.jwt_handler import AuthHandler
 from ..exceptions import PartNotFoundException
 from ..models.part import Part, UpdatePart
 
-router = APIRouter()
+auth_handler: AuthHandler = AuthHandler()
+router: APIRouter = APIRouter()
 
 
 @router.get(
     "/{part_id}",
     response_description="Get single part",
-    response_model_by_alias=False,
 )
 async def get_part(part_id: PydanticObjectId):
     part: Part = await Part.get(part_id)
@@ -30,7 +31,6 @@ async def get_part(part_id: PydanticObjectId):
 @router.post(
     "/",
     response_description="Create part",
-    status_code=status.HTTP_201_CREATED,
 )
 async def create_part(part: Part):
     try:
@@ -42,10 +42,11 @@ async def create_part(part: Part):
         )
     created_part: Part = await Part.get(new_part.id)
     return JSONResponse(
-        {
+        status_code=status.HTTP_201_CREATED,
+        content={
             "message": f"Part {new_part.id} created",
             "data": created_part.model_dump(),
-        }
+        },
     )
 
 

@@ -10,7 +10,7 @@ from pymongo.errors import DuplicateKeyError
 from ..exceptions import CategoryNotFoundException
 from ..models.category import Category, UpdateCategory
 
-router = APIRouter()
+router: APIRouter = APIRouter()
 
 
 @router.get(
@@ -43,10 +43,11 @@ async def create_category(category: Category):
         )
     created_category: Category = await Category.get(new_category.id)
     return JSONResponse(
-        {
+        status_code=status.HTTP_201_CREATED,
+        content={
             "message": f"Category {new_category.id} created",
             "data": created_category.model_dump(),
-        }
+        },
     )
 
 

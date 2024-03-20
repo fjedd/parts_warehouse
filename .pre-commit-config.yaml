@@ -6,7 +6,6 @@ repos:
     -   id: end-of-file-fixer
     -   id: check-yaml
     -   id: debug-statements
-    -   id: requirements-txt-fixer
 -   repo: https://github.com/PyCQA/flake8
     rev: 6.1.0
     hooks:
@@ -30,3 +29,9 @@ repos:
       - id: isort
         name: isort (python)
         args: ["--profile", "black"]
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.3.3
+  hooks:
+    - id: ruff
+      args: [ --fix ]
+    - id: ruff-format

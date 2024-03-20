@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 class Category(Document):
     name: Annotated[str, Indexed(unique=True)]
-    parent_name: Optional[str] = None
+    parent_name: str | None = None
 
     @before_event(Insert, Update)
     async def parent_category_exists(self):
