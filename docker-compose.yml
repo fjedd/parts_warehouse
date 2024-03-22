@@ -13,6 +13,6 @@ services:
     restart: always
     ports:
       - 8080:8080
-    command: python app/main.py
+    command: python src/main.py
     stdin_open: true
     tty: true

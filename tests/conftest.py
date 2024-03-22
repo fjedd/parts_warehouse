@@ -7,24 +7,24 @@ from httpx import AsyncClient
 from mongomock_motor import AsyncMongoMockClient
 from pymongo.results import InsertManyResult
 
-import app.core.models as models
-from app.core.app import app
-from app.core.models.category import Category
-from app.core.models.part import Part
+import src.core.models as models
+from src.core.app import app, auth_handler
+from src.core.models.auth.user import User
+from src.core.models.category import Category
+from src.core.models.part import Part
 
 
 async def mock_database():
-    client = AsyncMongoMockClient()
+    client: AsyncMongoMockClient = AsyncMongoMockClient()
     await init_beanie(
         database=client["database_name"],
-        recreate_views=True,
         document_models=models.__all__,
     )
 
 
 @pytest.fixture
 async def client(mocker):
-    mocker.patch("app.core.database.init_db", return_value=await mock_database())
+    mocker.patch("src.core.database.init_db", return_value=await mock_database())
     async with LifespanManager(app):
         async with AsyncClient(
             app=app, base_url="http://test", follow_redirects=True
@@ -33,7 +33,7 @@ async def client(mocker):
 
 
 @pytest.fixture
-def anyio_backend():
+def anyio_backend() -> str:
     return "asyncio"
 
 
@@ -127,3 +127,29 @@ async def categories():
         [Category(**category) for category in category_data]
     )
     yield categories
+
+
+def mock_no_authentication() -> None:
+    app.dependency_overrides[auth_handler.verify_token] = lambda: {}  # type: ignore
+
+
+@pytest.fixture
+async def user():
+    user_data: Dict[str, Any] = {
+        "username": "test",
+        "email": "test@test.com",
+        "password": "test",
+    }
+    user: User = await User(
+        username=user_data["username"],
+        email=user_data["email"],
+        password=auth_handler.get_password_hash(user_data["password"]),
+    ).create()
+    user_data["user_id"] = user.id
+    yield user_data
+
+
+@pytest.fixture
+async def token(user: Dict[str, Any]):
+    token: str = auth_handler.encode_token(user["user_id"])
+    yield token
