@@ -11,6 +11,11 @@ beanie = "1.25.0"
 fastapi = "0.110.0"
 python-dotenv = "1.0.1"
 uvicorn = "0.27.0"
+python-jose = "3.3.0"
+passlib = "1.7.4"
+pydantic-settings = "2.2.1"
+email-validator = "2.1.1"
+python-multipart = "0.0.9"
 
 [tool.poetry.group.test.dependencies]
 pytest = "8.0.2"
@@ -27,4 +32,4 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_tests.py", "*_test.py"]
-pythonpath = [".", "app"]
+pythonpath = [".", "src"]
