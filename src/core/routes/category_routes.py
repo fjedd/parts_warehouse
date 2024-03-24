@@ -56,6 +56,8 @@ async def update_category(
     category_id: PydanticObjectId, data: UpdateCategory = Body(...)
 ):
     category: Category = await Category.find_one({"_id": category_id})
+    if not category:
+        raise CategoryNotFoundException(category_id)
     update_data: Dict[str, Any] = data.model_dump(exclude_none=True)
     if not update_data:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)

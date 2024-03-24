@@ -54,7 +54,7 @@ async def create_part(part: Part):
 async def update_part(part_id: PydanticObjectId, data: UpdatePart = Body(...)):
     part: Part = await Part.find_one({"_id": part_id})
     if not part:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise PartNotFoundException(part_id)
     if data.location:
         data.location = part.location.model_copy(
             update=data.location.model_dump(exclude_none=True)
