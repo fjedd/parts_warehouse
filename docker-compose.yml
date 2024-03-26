@@ -1,18 +1,19 @@
 services:
   mongodb:
-    image: mongo:6.0.13
+    platform: ${MONGO_PLATFORM}
+    image: mongo:7.0.7
     container_name: mongodb
   app:
     build:
       context: .
-      dockerfile: "Dockerfile"
+      dockerfile: ${DOCKERFILE}
     volumes:
       - ./:/app
     depends_on:
       - mongodb
     restart: always
     ports:
-      - 8080:8080
+      - ${APP_PORT}:${APP_PORT}
     command: python src/main.py
     stdin_open: true
     tty: true
