@@ -24,7 +24,9 @@ async def mock_database():
 
 @pytest.fixture
 async def client(mocker):
-    mocker.patch("src.core.database.init_db", return_value=await mock_database())
+    mocker.patch(
+        "src.core.database.Database.init_db", return_value=await mock_database()
+    )
     async with LifespanManager(app):
         async with AsyncClient(
             app=app, base_url="http://test", follow_redirects=True
@@ -35,6 +37,32 @@ async def client(mocker):
 @pytest.fixture
 def anyio_backend() -> str:
     return "asyncio"
+
+
+def mock_no_authentication() -> None:
+    app.dependency_overrides[auth_handler.verify_token] = lambda: {}  # type: ignore
+
+
+@pytest.fixture
+async def user():
+    user_data: Dict[str, Any] = {
+        "username": "test",
+        "email": "test@test.com",
+        "password": "test",
+    }
+    user: User = await User(
+        username=user_data["username"],
+        email=user_data["email"],
+        password=auth_handler.get_password_hash(user_data["password"]),
+    ).create()
+    user_data["user_id"] = user.id
+    yield user_data
+
+
+@pytest.fixture
+async def token(user: Dict[str, Any]):
+    token: str = auth_handler.encode_token(user["user_id"])
+    yield token
 
 
 @pytest.fixture
@@ -127,29 +155,3 @@ async def categories():
         [Category(**category) for category in category_data]
     )
     yield categories
-
-
-def mock_no_authentication() -> None:
-    app.dependency_overrides[auth_handler.verify_token] = lambda: {}  # type: ignore
-
-
-@pytest.fixture
-async def user():
-    user_data: Dict[str, Any] = {
-        "username": "test",
-        "email": "test@test.com",
-        "password": "test",
-    }
-    user: User = await User(
-        username=user_data["username"],
-        email=user_data["email"],
-        password=auth_handler.get_password_hash(user_data["password"]),
-    ).create()
-    user_data["user_id"] = user.id
-    yield user_data
-
-
-@pytest.fixture
-async def token(user: Dict[str, Any]):
-    token: str = auth_handler.encode_token(user["user_id"])
-    yield token
