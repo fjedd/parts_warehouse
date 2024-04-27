@@ -18,8 +18,6 @@ async def list_parts():
 
 
 @router.get("/categories", response_description="List all categories")
-async def list_categories(
-    # user: Annotated[User, Depends(auth_handler.verify_token)]
-):
+async def list_categories():
     categories: List[Category] = await Category.all().to_list()
     return JSONResponse({"data": [category.model_dump() for category in categories]})

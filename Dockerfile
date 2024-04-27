@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     POETRY_VIRTUALENVS_CREATE=false
 WORKDIR /app
 COPY poetry.lock pyproject.toml /app/
-RUN apk update && apk add bash build-base
+RUN apk update && apk add bash build-base libffi-dev
 RUN pip install -U pip && pip install poetry
 RUN poetry install
 

@@ -11,6 +11,7 @@ pipeline {
     stages {
         stage("Build and start image") {
             steps {
+                sh "cp .env.dev .env"
                 sh "docker-compose build"
                 sh "docker-compose up -d"
             }
@@ -19,7 +20,7 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    sh 'docker-compose exec -T pytest'
+                    sh 'docker-compose exec -T app pytest -p no:cacheprovider'
                 }
             }
         }
