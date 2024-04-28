@@ -66,6 +66,12 @@ async def token(user: Dict[str, Any]):
 
 
 @pytest.fixture
+async def expired_token(user: Dict[str, Any]):
+    token: str = auth_handler.encode_token(user["user_id"], expire_time=-1)
+    yield token
+
+
+@pytest.fixture
 async def parts(categories):
     parts_data: List[Dict[str, Any]] = [
         {
