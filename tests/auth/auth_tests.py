@@ -7,11 +7,6 @@ from httpx import AsyncClient, Response
 
 from src.core.models.auth.user import User
 
-expired_token: str = (
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNjVmZDZiZTUyMjBiOWVhYzkwNzllMjEwIiwiZXhwI"
-    "joxNzExMTA0Njg4fQ.gQa6XCAIKBK827wVZNgVeYLJZW4O6Yr5BHITBLLPr50"
-)
-
 
 @pytest.mark.anyio
 async def test_get_token_correct_user(client: AsyncClient, user: User):
@@ -137,7 +132,9 @@ async def test_GET_endpoints_valid_token(
     "endpoint", ("/categories/123", "/parts/123", "/search/parts", "search/categories")
 )
 @pytest.mark.anyio
-async def test_GET_endpoints_expired_token(client: AsyncClient, endpoint: str):
+async def test_GET_endpoints_expired_token(
+    client: AsyncClient, endpoint: str, expired_token: str
+):
     # Arrange
     headers: Dict[str, str] = {
         "accept": "application/json",
@@ -155,7 +152,9 @@ async def test_GET_endpoints_expired_token(client: AsyncClient, endpoint: str):
 
 @pytest.mark.parametrize("endpoint", ("/categories", "/parts"))
 @pytest.mark.anyio
-async def test_POST_endpoints_expired_token(client: AsyncClient, endpoint: str):
+async def test_POST_endpoints_expired_token(
+    client: AsyncClient, endpoint: str, expired_token: str
+):
     # Arrange
     headers: Dict[str, str] = {
         "accept": "application/json",
@@ -173,7 +172,9 @@ async def test_POST_endpoints_expired_token(client: AsyncClient, endpoint: str):
 
 @pytest.mark.parametrize("endpoint", ("/categories/123", "/parts/123"))
 @pytest.mark.anyio
-async def test_PUT_endpoints_expired_token(client: AsyncClient, endpoint: str):
+async def test_PUT_endpoints_expired_token(
+    client: AsyncClient, endpoint: str, expired_token: str
+):
     # Arrange
     headers: Dict[str, str] = {
         "accept": "application/json",
@@ -191,7 +192,9 @@ async def test_PUT_endpoints_expired_token(client: AsyncClient, endpoint: str):
 
 @pytest.mark.parametrize("endpoint", ("/categories/123", "/parts/123"))
 @pytest.mark.anyio
-async def test_DELETE_endpoints_expired_token(client: AsyncClient, endpoint: str):
+async def test_DELETE_endpoints_expired_token(
+    client: AsyncClient, endpoint: str, expired_token: str
+):
     # Arrange
     headers: Dict[str, str] = {
         "accept": "application/json",

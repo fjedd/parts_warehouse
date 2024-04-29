@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any, Dict
 
 from beanie import PydanticObjectId
@@ -24,10 +24,20 @@ class AuthHandler:
     def verify_password(self, password: str, hashed_password: str) -> bool:
         return self.pwd_context.verify(password, hashed_password)
 
-    def encode_token(self, user_id: PydanticObjectId) -> str:
+    def encode_token(
+        self, user_id: PydanticObjectId, expire_time: int | None = None
+    ) -> str:
+        if expire_time:
+            expire: datetime = datetime.now(timezone.utc) + timedelta(
+                minutes=expire_time
+            )
+        else:
+            expire: datetime = datetime.now(timezone.utc) + timedelta(  # type: ignore
+                minutes=self.expire
+            )
         payload: Dict[str, Any] = {
             "user_id": user_id.__str__(),
-            "exp": datetime.utcnow() + timedelta(minutes=self.expire),
+            "exp": expire,
         }
         return jwt.encode(payload, self.secret, algorithm=self.algorithm)
 
